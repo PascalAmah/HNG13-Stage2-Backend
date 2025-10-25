@@ -3,12 +3,13 @@ require("dotenv").config();
 
 const pool = mysql.createPool({
   host: process.env.DB_HOST,
+  port: process.env.DB_PORT,
   user: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME,
   waitForConnections: true,
   connectionLimit: 10,
-  queueLimit: 0
+  queueLimit: 0,
 });
 
 async function getConnection() {
@@ -40,7 +41,17 @@ async function initializeDatabase() {
 }
 
 async function upsertCountry(connection, countryData) {
-  const { name, capital, region, population, currency_code, exchange_rate, estimated_gdp, flag_url, last_refreshed_at } = countryData;
+  const {
+    name,
+    capital,
+    region,
+    population,
+    currency_code,
+    exchange_rate,
+    estimated_gdp,
+    flag_url,
+    last_refreshed_at,
+  } = countryData;
   if (!name || !population) {
     throw new Error("Validation failed: name and population are required");
   }
@@ -59,11 +70,24 @@ async function upsertCountry(connection, countryData) {
       flag_url = VALUES(flag_url),
       last_refreshed_at = VALUES(last_refreshed_at)
     `,
-    [name, capital, region, population, currency_code, exchange_rate, estimated_gdp, flag_url, last_refreshed_at]
+    [
+      name,
+      capital,
+      region,
+      population,
+      currency_code,
+      exchange_rate,
+      estimated_gdp,
+      flag_url,
+      last_refreshed_at,
+    ]
   );
 }
 
-async function getCountries(connection, { region, currency_code, sort, limit } = {}) {
+async function getCountries(
+  connection,
+  { region, currency_code, sort, limit } = {}
+) {
   let query = "SELECT * FROM countries";
   const params = [];
   const conditions = [];
@@ -92,23 +116,31 @@ async function getCountries(connection, { region, currency_code, sort, limit } =
 }
 
 async function getCountryByName(connection, name) {
-  const [rows] = await connection.query("SELECT * FROM countries WHERE LOWER(name) = LOWER(?)", [name]);
+  const [rows] = await connection.query(
+    "SELECT * FROM countries WHERE LOWER(name) = LOWER(?)",
+    [name]
+  );
   return rows[0] || null;
 }
 
 async function deleteCountryByName(connection, name) {
-  const [result] = await connection.query("DELETE FROM countries WHERE LOWER(name) = LOWER(?)", [name]);
+  const [result] = await connection.query(
+    "DELETE FROM countries WHERE LOWER(name) = LOWER(?)",
+    [name]
+  );
   return result.affectedRows > 0;
 }
 
 async function getStatus(connection) {
-  const [[{ total }]] = await connection.query("SELECT COUNT(*) as total FROM countries");
+  const [[{ total }]] = await connection.query(
+    "SELECT COUNT(*) as total FROM countries"
+  );
   const [[{ last_refreshed_at }]] = await connection.query(
     "SELECT MAX(last_refreshed_at) as last_refreshed_at FROM countries"
   );
   return {
     total_countries: total,
-    last_refreshed_at: last_refreshed_at || null
+    last_refreshed_at: last_refreshed_at || null,
   };
 }
 
@@ -119,5 +151,5 @@ module.exports = {
   getCountries,
   getCountryByName,
   deleteCountryByName,
-  getStatus
+  getStatus,
 };
