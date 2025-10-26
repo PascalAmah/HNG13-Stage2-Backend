@@ -33,27 +33,28 @@ app.get("/", (req, res) => {
 
 // POST /countries/refresh
 app.post("/countries/refresh", async (req, res) => {
+  let connection;
   try {
-    // Fetch country data
     const countriesResponse = await axios.get(
       "https://restcountries.com/v2/all?fields=name,capital,region,population,flag,currencies",
-      { timeout: 10000 }
+      { timeout: 30000 }
     );
     const countries = countriesResponse.data;
-
-    // Fetch exchange rates
+   
     const ratesResponse = await axios.get(
       "https://open.er-api.com/v6/latest/USD",
-      { timeout: 10000 }
+      { timeout: 30000 }
     );
     const exchangeRates = ratesResponse.data.rates;
 
-    const connection = await getConnection();
-    const lastRefreshedAt = new Date().toISOString();
+    connection = await getConnection();
+   
+    const lastRefreshedAt = new Date()
+      .toISOString()
+      .replace("T", " ")
+      .replace(/\.\d{3}Z$/, "");
 
-    // Process each country
     for (const country of countries) {
-      // Validation
       if (!country.name || !country.population) {
         console.warn(
           `Skipping ${country.name || "unknown"}: Missing required fields`
@@ -71,7 +72,8 @@ app.post("/countries/refresh", async (req, res) => {
       if (currency && exchangeRates[currency]) {
         exchangeRate = exchangeRates[currency];
         const randomMultiplier = Math.random() * (2000 - 1000) + 1000;
-        estimatedGdp = (country.population * randomMultiplier) / exchangeRate;
+        estimatedGdp =
+          (country.population * randomMultiplier) / exchangeRate || 0;
       }
 
       const countryData = {
@@ -81,7 +83,7 @@ app.post("/countries/refresh", async (req, res) => {
         population: country.population,
         currency_code: currency,
         exchange_rate: exchangeRate,
-        estimated_gdp: estimatedGdp,
+        estimated_gdp: Number(estimatedGdp),
         flag_url: country.flag || null,
         last_refreshed_at: lastRefreshedAt,
       };
@@ -89,8 +91,8 @@ app.post("/countries/refresh", async (req, res) => {
       await upsertCountry(connection, countryData);
     }
 
-    // Generate summary image
     const totalCountries = countries.length;
+   
     const topCountries = await getCountries(connection, {
       sort: "gdp_desc",
       limit: 5,
@@ -102,13 +104,14 @@ app.post("/countries/refresh", async (req, res) => {
       last_refreshed_at: lastRefreshedAt,
     });
   } catch (error) {
-    console.error("Refresh error:", error.message);
+    console.error("Refresh error:", error.message, error.stack);
     res.status(503).json({
       error: "External data source unavailable",
-      details: `Could not fetch data from ${
-        error.config?.url || "unknown API"
-      }`,
+      details: error.message || "Unknown error",
+      api: error.config?.url || "unknown API",
     });
+  } finally {
+    if (connection) connection.release();
   }
 });
 

@@ -2,42 +2,46 @@ const { createCanvas } = require("canvas");
 const fs = require("fs").promises;
 const path = require("path");
 
-async function generateSummaryImage(totalCountries, topCountries, lastRefreshedAt) {
-  const width = 600;
-  const height = 400;
+async function generateSummaryImage(
+  totalCountries,
+  topCountries,
+  lastRefreshedAt
+) {
+  const width = 800;
+  const height = 600;
   const canvas = createCanvas(width, height);
   const ctx = canvas.getContext("2d");
 
   // Background
-  ctx.fillStyle = "#f0f0f0";
+  ctx.fillStyle = "#ffffff";
   ctx.fillRect(0, 0, width, height);
 
   // Title
-  ctx.fillStyle = "#333";
+  ctx.fillStyle = "#000000";
   ctx.font = "bold 24px Arial";
-  ctx.fillText("Country Data Summary", 20, 40);
+  ctx.fillText(`World Countries Summary (${totalCountries} countries)`, 50, 50);
 
-  // Total Countries
-  ctx.font = "18px Arial";
-  ctx.fillText(`Total Countries: ${totalCountries}`, 20, 80);
+  // Last refreshed
+  ctx.font = "16px Arial";
+  ctx.fillText(`Last Refreshed: ${lastRefreshedAt}`, 50, 80);
 
-  // Top 5 by GDP
-  ctx.fillText("Top 5 Countries by Estimated GDP:", 20, 120);
+  // Top countries
+  ctx.font = "bold 20px Arial";
+  ctx.fillText("Top 5 Countries by Estimated GDP", 50, 120);
+
+  ctx.font = "16px Arial";
   topCountries.forEach((country, index) => {
-    ctx.fillText(
-      `${index + 1}. ${country.name}: $${country.estimated_gdp.toFixed(2)}`,
-      20,
-      160 + index * 30
-    );
+    const y = 160 + index * 40;
+    const gdp = country.estimated_gdp
+      ? Number(country.estimated_gdp).toFixed(2)
+      : "0.00";
+    ctx.fillText(`${index + 1}. ${country.name}: $${gdp}`, 50, y);
   });
 
-  // Timestamp
-  ctx.fillText(`Last Refreshed: ${lastRefreshedAt}`, 20, 340);
-
   // Save image
+  const imagePath = path.join(__dirname, "../cache/summary.png");
   const buffer = canvas.toBuffer("image/png");
-  await fs.mkdir(path.join(__dirname, "../cache"), { recursive: true });
-  await fs.writeFile(path.join(__dirname, "../cache/summary.png"), buffer);
+  await fs.writeFile(imagePath, buffer);
 }
 
 module.exports = { generateSummaryImage };
