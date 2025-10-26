@@ -40,7 +40,7 @@ app.post("/countries/refresh", async (req, res) => {
       { timeout: 30000 }
     );
     const countries = countriesResponse.data;
-   
+
     const ratesResponse = await axios.get(
       "https://open.er-api.com/v6/latest/USD",
       { timeout: 30000 }
@@ -48,7 +48,7 @@ app.post("/countries/refresh", async (req, res) => {
     const exchangeRates = ratesResponse.data.rates;
 
     connection = await getConnection();
-   
+
     const lastRefreshedAt = new Date()
       .toISOString()
       .replace("T", " ")
@@ -92,7 +92,7 @@ app.post("/countries/refresh", async (req, res) => {
     }
 
     const totalCountries = countries.length;
-   
+
     const topCountries = await getCountries(connection, {
       sort: "gdp_desc",
       limit: 5,
@@ -174,11 +174,19 @@ app.get("/status", async (req, res) => {
 // GET /countries/image
 app.get("/countries/image", async (req, res) => {
   try {
-    const imagePath = path.join(__dirname, "../cache/summary.png");
+    const imagePath = "/tmp/summary.png";
+
     await fs.access(imagePath);
+
     res.setHeader("Content-Type", "image/png");
-    res.sendFile(imagePath);
+    res.sendFile(imagePath, (err) => {
+      if (err) {
+        console.error("Error sending image:", err);
+        res.status(500).json({ error: "Error sending summary image" });
+      }
+    });
   } catch (error) {
+    console.error("❌ Image not found:", error.message);
     res.status(404).json({ error: "Summary image not found" });
   }
 });
