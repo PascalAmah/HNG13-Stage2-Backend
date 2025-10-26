@@ -38,10 +38,15 @@ async function generateSummaryImage(
     ctx.fillText(`${index + 1}. ${country.name}: $${gdp}`, 50, y);
   });
 
-  // Save image
-  const imagePath = path.join(__dirname, "../cache/summary.png");
+  // Use writable directory on Leapcell
+  const imagePath = path.join("/tmp", "summary.png");
+
+  // Save image safely
   const buffer = canvas.toBuffer("image/png");
   await fs.writeFile(imagePath, buffer);
+
+  console.log(`✅ Summary image saved at: ${imagePath}`);
+  return imagePath;
 }
 
 module.exports = { generateSummaryImage };
