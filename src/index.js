@@ -171,27 +171,107 @@ app.get("/status", async (req, res) => {
   }
 });
 
+// app.get("/countries/image", async (req, res) => {
+//   // const imagePath = path.join(__dirname, "../cache/summary.png");
+//   const imagePath = "/tmp/summary.png";
+//   try {
+//     await fs.access(imagePath);
+//     res.setHeader("Content-Type", "image/png");
+//     res.sendFile(imagePath);
+//     console.log("Served summary image");
+//   } catch (error) {
+//     console.error("Image not found:", error.message);
+//     // Generate a default image if missing
+//     const totalCountries = 0;
+//     const topCountries = [];
+//     const lastRefreshedAt = new Date()
+//       .toISOString()
+//       .replace("T", " ")
+//       .replace(/\.\d{3}Z$/, "");
+//     await generateSummaryImage(totalCountries, topCountries, lastRefreshedAt);
+//     res.setHeader("Content-Type", "image/png");
+//     res.sendFile(imagePath);
+//     console.log("Generated and served default summary image");
+//   }
+// });
+
 app.get("/countries/image", async (req, res) => {
-  // const imagePath = path.join(__dirname, "../cache/summary.png");
-  const imagePath = "/tmp/summary.png";
+  let connection;
   try {
-    await fs.access(imagePath);
-    res.setHeader("Content-Type", "image/png");
-    res.sendFile(imagePath);
-    console.log("Served summary image");
-  } catch (error) {
-    console.error("Image not found:", error.message);
-    // Generate a default image if missing
-    const totalCountries = 0;
-    const topCountries = [];
+    connection = await getConnection();
+    const status = await getStatus(connection);
+    const totalCountries = status.total_countries || 0;
+    const topCountries = await getCountries(connection, {
+      sort: "gdp_desc",
+      limit: 5,
+    });
     const lastRefreshedAt = new Date()
       .toISOString()
       .replace("T", " ")
       .replace(/\.\d{3}Z$/, "");
-    await generateSummaryImage(totalCountries, topCountries, lastRefreshedAt);
+
+    // Generate image in memory
+    const { createCanvas } = require("canvas");
+    const canvas = createCanvas(800, 600);
+    const ctx = canvas.getContext("2d");
+
+    // Background
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, 800, 600);
+
+    // Title
+    ctx.fillStyle = "#000000";
+    ctx.font = "bold 24px Arial";
+    ctx.fillText(
+      `World Countries Summary (${totalCountries} countries)`,
+      50,
+      50
+    );
+
+    // Last refreshed
+    ctx.font = "16px Arial";
+    ctx.fillText(`Last Refreshed: ${lastRefreshedAt}`, 50, 80);
+
+    // Top countries header
+    ctx.font = "bold 20px Arial";
+    ctx.fillText("Top 5 Countries by Estimated GDP", 50, 120);
+
+    // Top 5 countries (or "No data" if empty)
+    ctx.font = "16px Arial";
+    if (!topCountries || topCountries.length === 0) {
+      ctx.fillText("No countries available", 50, 160);
+    } else {
+      topCountries.slice(0, 5).forEach((country, index) => {
+        const y = 160 + index * 40;
+        const gdp = country.estimated_gdp
+          ? Number(country.estimated_gdp).toFixed(2)
+          : "0.00";
+        ctx.fillText(`${index + 1}. ${country.name}: $${gdp}`, 50, y);
+      });
+    }
+
+    // Stream the image directly
     res.setHeader("Content-Type", "image/png");
-    res.sendFile(imagePath);
-    console.log("Generated and served default summary image");
+    res.setHeader("Content-Disposition", "inline; filename=summary.png");
+    const stream = canvas.createPNGStream();
+    stream.pipe(res);
+    console.log("Streamed summary image");
+  } catch (error) {
+    console.error("Image generation error:", error.message);
+    // Fallback to a minimal image on error
+    const canvas = createCanvas(800, 600);
+    const ctx = canvas.getContext("2d");
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, 800, 600);
+    ctx.fillStyle = "#000000";
+    ctx.font = "16px Arial";
+    ctx.fillText("Error generating image", 50, 50);
+    res.setHeader("Content-Type", "image/png");
+    const stream = canvas.createPNGStream();
+    stream.pipe(res);
+    console.log("Streamed fallback image due to error");
+  } finally {
+    if (connection) connection.release();
   }
 });
 
