@@ -30,23 +30,25 @@ async function generateSummaryImage(
   ctx.fillText("Top 5 Countries by Estimated GDP", 50, 120);
 
   ctx.font = "16px Arial";
-  topCountries.forEach((country, index) => {
-    const y = 160 + index * 40;
-    const gdp = country.estimated_gdp
-      ? Number(country.estimated_gdp).toFixed(2)
-      : "0.00";
-    ctx.fillText(`${index + 1}. ${country.name}: $${gdp}`, 50, y);
-  });
+  if (!topCountries || topCountries.length === 0) {
+    ctx.fillText("No countries available", 50, 160);
+  } else {
+    topCountries.forEach((country, index) => {
+      const y = 160 + index * 40;
+      const gdp = country.estimated_gdp
+        ? Number(country.estimated_gdp).toFixed(2)
+        : "0.00";
+      ctx.fillText(`${index + 1}. ${country.name}: $${gdp}`, 50, y);
+    });
+  }
 
-  // Use writable directory on Leapcell
+  // Save image
+  // const imagePath = path.join(__dirname, "../cache/summary.png");
   const imagePath = path.join("/tmp", "summary.png");
-
-  // Save image safely
+  await fs.mkdir(path.dirname(imagePath), { recursive: true });
   const buffer = canvas.toBuffer("image/png");
   await fs.writeFile(imagePath, buffer);
-
-  console.log(`✅ Summary image saved at: ${imagePath}`);
-  return imagePath;
+  console.log(`Image saved to ${imagePath}`);
 }
 
 module.exports = { generateSummaryImage };

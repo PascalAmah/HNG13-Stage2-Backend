@@ -171,23 +171,27 @@ app.get("/status", async (req, res) => {
   }
 });
 
-// GET /countries/image
 app.get("/countries/image", async (req, res) => {
+  // const imagePath = path.join(__dirname, "../cache/summary.png");
+  const imagePath = "/tmp/summary.png";
   try {
-    const imagePath = "/tmp/summary.png";
-
     await fs.access(imagePath);
-
     res.setHeader("Content-Type", "image/png");
-    res.sendFile(imagePath, (err) => {
-      if (err) {
-        console.error("Error sending image:", err);
-        res.status(500).json({ error: "Error sending summary image" });
-      }
-    });
+    res.sendFile(imagePath);
+    console.log("Served summary image");
   } catch (error) {
-    console.error("❌ Image not found:", error.message);
-    res.status(404).json({ error: "Summary image not found" });
+    console.error("Image not found:", error.message);
+    // Generate a default image if missing
+    const totalCountries = 0;
+    const topCountries = [];
+    const lastRefreshedAt = new Date()
+      .toISOString()
+      .replace("T", " ")
+      .replace(/\.\d{3}Z$/, "");
+    await generateSummaryImage(totalCountries, topCountries, lastRefreshedAt);
+    res.setHeader("Content-Type", "image/png");
+    res.sendFile(imagePath);
+    console.log("Generated and served default summary image");
   }
 });
 
