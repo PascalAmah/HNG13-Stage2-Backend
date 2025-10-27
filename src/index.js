@@ -171,40 +171,14 @@ app.get("/status", async (req, res) => {
   }
 });
 
-// app.get("/countries/image", async (req, res) => {
-//   // const imagePath = path.join(__dirname, "../cache/summary.png");
-//   const imagePath = "/tmp/summary.png";
-//   try {
-//     await fs.access(imagePath);
-//     res.setHeader("Content-Type", "image/png");
-//     res.sendFile(imagePath);
-//     console.log("Served summary image");
-//   } catch (error) {
-//     console.error("Image not found:", error.message);
-//     // Generate a default image if missing
-//     const totalCountries = 0;
-//     const topCountries = [];
-//     const lastRefreshedAt = new Date()
-//       .toISOString()
-//       .replace("T", " ")
-//       .replace(/\.\d{3}Z$/, "");
-//     await generateSummaryImage(totalCountries, topCountries, lastRefreshedAt);
-//     res.setHeader("Content-Type", "image/png");
-//     res.sendFile(imagePath);
-//     console.log("Generated and served default summary image");
-//   }
-// });
-
-app.get("/countries/image", async (req, res) => {
+// GET /summary/image (New endpoint name)
+app.get("/summary/image", async (req, res) => {
   let connection;
   try {
     connection = await getConnection();
     const status = await getStatus(connection);
     const totalCountries = status.total_countries || 0;
-    const topCountries = await getCountries(connection, {
-      sort: "gdp_desc",
-      limit: 5,
-    });
+    const topCountries = await getCountries(connection, { sort: "gdp_desc", limit: 5 });
     const lastRefreshedAt = new Date()
       .toISOString()
       .replace("T", " ")
@@ -222,11 +196,7 @@ app.get("/countries/image", async (req, res) => {
     // Title
     ctx.fillStyle = "#000000";
     ctx.font = "bold 24px Arial";
-    ctx.fillText(
-      `World Countries Summary (${totalCountries} countries)`,
-      50,
-      50
-    );
+    ctx.fillText(`World Countries Summary (${totalCountries} countries)`, 50, 50);
 
     // Last refreshed
     ctx.font = "16px Arial";
@@ -243,9 +213,7 @@ app.get("/countries/image", async (req, res) => {
     } else {
       topCountries.slice(0, 5).forEach((country, index) => {
         const y = 160 + index * 40;
-        const gdp = country.estimated_gdp
-          ? Number(country.estimated_gdp).toFixed(2)
-          : "0.00";
+        const gdp = country.estimated_gdp ? Number(country.estimated_gdp).toFixed(2) : "0.00";
         ctx.fillText(`${index + 1}. ${country.name}: $${gdp}`, 50, y);
       });
     }
