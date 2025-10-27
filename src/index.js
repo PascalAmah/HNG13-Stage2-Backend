@@ -178,7 +178,10 @@ app.get("/summary/image", async (req, res) => {
     connection = await getConnection();
     const status = await getStatus(connection);
     const totalCountries = status.total_countries || 0;
-    const topCountries = await getCountries(connection, { sort: "gdp_desc", limit: 5 });
+    const topCountries = await getCountries(connection, {
+      sort: "gdp_desc",
+      limit: 5,
+    });
     const lastRefreshedAt = new Date()
       .toISOString()
       .replace("T", " ")
@@ -196,7 +199,11 @@ app.get("/summary/image", async (req, res) => {
     // Title
     ctx.fillStyle = "#000000";
     ctx.font = "bold 24px Arial";
-    ctx.fillText(`World Countries Summary (${totalCountries} countries)`, 50, 50);
+    ctx.fillText(
+      `World Countries Summary (${totalCountries} countries)`,
+      50,
+      50
+    );
 
     // Last refreshed
     ctx.font = "16px Arial";
@@ -213,7 +220,9 @@ app.get("/summary/image", async (req, res) => {
     } else {
       topCountries.slice(0, 5).forEach((country, index) => {
         const y = 160 + index * 40;
-        const gdp = country.estimated_gdp ? Number(country.estimated_gdp).toFixed(2) : "0.00";
+        const gdp = country.estimated_gdp
+          ? Number(country.estimated_gdp).toFixed(2)
+          : "0.00";
         ctx.fillText(`${index + 1}. ${country.name}: $${gdp}`, 50, y);
       });
     }
@@ -226,7 +235,7 @@ app.get("/summary/image", async (req, res) => {
     console.log("Streamed summary image");
   } catch (error) {
     console.error("Image generation error:", error.message);
-    // Fallback to a minimal image on error
+
     const canvas = createCanvas(800, 600);
     const ctx = canvas.getContext("2d");
     ctx.fillStyle = "#ffffff";
