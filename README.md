@@ -213,13 +213,13 @@ Returns the total number of countries and last refresh timestamp.
 }
 ```
 
-### GET /countries/image
+### GET /summary/image
 
 Serves a PNG image summarizing total countries, top 5 GDPs, and last refresh timestamp.
 
-**Response:** PNG image (`cache/summary.png`)
+**Response**: PNG image
 
-**Error (404 Not Found):**
+**Error (404 Not Found)**:
 
 ```json
 { "error": "Summary image not found" }
@@ -261,3 +261,45 @@ apt-get update && apt-get install -y libexpat1 libcairo2 libpango1.0-0 libjpeg-d
 - **Stack:** Node.js/Express
 - **GitHub:** [https://github.com/pascalamah/hng13-stage2-backend](https://github.com/pascalamah/hng13-stage2-backend)
 - **API Base URL:** [https://13-tage2-ackend-pascalamaliri419-2u6siwpo.leapcell.dev](https://13-tage2-ackend-pascalamaliri419-2u6siwpo.leapcell.dev)
+
+# Initialize DB (if needed)
+
+curl https://13-tage2-ackend-pascalamaliri419-2u6siwpo.leapcell.dev/init-db
+
+# Expected: {"message": "✅ Database initialized successfully!"}
+
+# Populate DB
+
+curl -X POST https://13-tage2-ackend-pascalamaliri419-2u6siwpo.leapcell.dev/countries/refresh
+
+# Expected: {"message": "Data refreshed successfully", "last_refreshed_at": "2025-10-26 18:36:00"}
+
+# List countries
+
+curl https://13-tage2-ackend-pascalamaliri419-2u6siwpo.leapcell.dev/countries?region=Africa
+
+# Expected: [{"id": 1, "name": "Nigeria", ...}]
+
+# Single country
+
+curl https://13-tage2-ackend-pascalamaliri419-2u6siwpo.leapcell.dev/countries/Nigeria
+
+# Expected: {"id": 1, "name": "Nigeria", ...} or {"error": "Country not found"}
+
+# Delete country
+
+curl -X DELETE https://13-tage2-ackend-pascalamaliri419-2u6siwpo.leapcell.dev/countries/Nigeria
+
+# Expected: {"message": "Country deleted successfully"} or {"error": "Country not found"}
+
+# Status
+
+curl https://13-tage2-ackend-pascalamaliri419-2u6siwpo.leapcell.dev/status
+
+# Expected: {"total_countries": 250, "last_refreshed_at": "..."}
+
+# Image
+
+curl https://13-tage2-ackend-pascalamaliri419-2u6siwpo.leapcell.dev/countries/image > summary.png
+
+# Expected: Downloadable PNG
